@@ -1,0 +1,34 @@
+# Build trees
+build/
+build-*/
+install/
+install-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Firmware / native build products
+*.o
+*.obj
+*.a
+*.elf
+*.img
+*.img.gz
+*.gz
+
+# Amiga tool build products
+agaboot/agaboot.new
+agastat/agastat.new
+
+# Local/editor files
+*.swp
+*.swo
+*~
+.DS_Store
+__pycache__/
+
+# Patch/recovery debris
+*.orig
+*.rej
+*.bak

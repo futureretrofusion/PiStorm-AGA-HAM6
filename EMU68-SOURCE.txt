@@ -1,0 +1,14 @@
+Upstream Emu68 target
+=====================
+
+Project : Emu68
+Author  : Michal Schulz and contributors
+Source  : https://github.com/michalsc/Emu68
+Version : 1.1.0-beta.1
+Commit  : 0ba3a899341dee958332a4182911861420b03bff
+License : MPL-2.0
+
+Apply:
+  arm/emu68-aga.patch
+
+The Emu68 source tree is intentionally not copied into this repository.

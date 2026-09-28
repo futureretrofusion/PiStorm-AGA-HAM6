@@ -1,0 +1,79 @@
+--- a/src/aarch64/vectors.c
++++ b/src/aarch64/vectors.c
+@@ -421,8 +421,13 @@
+     if (far == 0xDFF1EA && size == 4 && !aga_sandbox_active) { aga_audio_set_ring((uint32_t)value); return 1; }
+     /* Pre-entry physical HAM6 descriptor from agaboot. */
+     if (far == 0xDFF1F4 && size == 4 && !aga_sandbox_active) { aga_ham6_set_descriptor((uint32_t)value); return 1; }
+-    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0B) { aga_game_mode = 0; aga_sandbox_enter(); return 1; }
+-    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0C) { aga_game_mode = 1; aga_sandbox_enter(); return 1; }
++    /* Program-scoped AGA/HAM6. PREP must run before descriptor publication so
++       CPU1 cannot take the physical RGB connector until the child display is ready. */
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A1D) { aga_program_prepare(); return 1; }
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A1E) { aga_program_cancel(); return 1; }
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0B) { aga_program_cancel(); aga_game_mode = 0; aga_sandbox_enter(); return 1; }
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0C) { aga_program_cancel(); aga_game_mode = 1; aga_sandbox_enter(); return 1; }
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0D) { aga_game_mode = 0; if (!aga_program_mode) aga_program_prepare(); aga_sandbox_enter(); return 1; }
+     /* $5B0N: leave bisect level, set at RUNTIME. As a cmdline option each
+        rung cost a boot - card out of the Amiga into the PC - five goddamn trips to
+        bisect one function. Here, only the rungs that actually kill the
+@@ -837,8 +842,13 @@
+     if (far == 0xDFF1EA && size == 4 && !aga_sandbox_active) { aga_audio_set_ring((uint32_t)value); return 1; }
+     /* Pre-entry physical HAM6 descriptor from agaboot. */
+     if (far == 0xDFF1F4 && size == 4 && !aga_sandbox_active) { aga_ham6_set_descriptor((uint32_t)value); return 1; }
+-    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0B) { aga_game_mode = 0; aga_sandbox_enter(); return 1; }
+-    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0C) { aga_game_mode = 1; aga_sandbox_enter(); return 1; }
++    /* Program-scoped AGA/HAM6. PREP must run before descriptor publication so
++       CPU1 cannot take the physical RGB connector until the child display is ready. */
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A1D) { aga_program_prepare(); return 1; }
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A1E) { aga_program_cancel(); return 1; }
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0B) { aga_program_cancel(); aga_game_mode = 0; aga_sandbox_enter(); return 1; }
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0C) { aga_program_cancel(); aga_game_mode = 1; aga_sandbox_enter(); return 1; }
++    if (far == 0xDFF1F2 && size == 2 && (value & 0xFFFF) == 0x5A0D) { aga_game_mode = 0; if (!aga_program_mode) aga_program_prepare(); aga_sandbox_enter(); return 1; }
+     /* $5B0N: leave bisect level, set at RUNTIME. As a cmdline option each
+        rung cost a boot - card out of the Amiga into the PC - five goddamn trips to
+        bisect one function. Here, only the rungs that actually kill the
+--- a/src/raspi/start_rpi64.c
++++ b/src/raspi/start_rpi64.c
+@@ -215,6 +215,9 @@
+     uint16_t *fb;
+     struct Size sz = get_display_size();
+     uint32_t start_x, start_y;
++#ifdef AGA_PISTORM
++    uint32_t aga_ham6_label_y = 0;
++#endif
+     of_node_t *e = NULL;
+ 
+     e = dt_find_node("/chosen");
+@@ -260,7 +263,8 @@
+ #ifdef AGA_PISTORM
+     /* a third line under the PiStorm logo; keep the whole stack centred */
+     struct EmuLogo *agalogo = rle_decode(logo_aga, logo_aga_len);
+-    start_y -= (agalogo->el_Height + 10) / 2;
++    /* Reserve one Topaz text row for the accelerator identity below it. */
++    start_y -= (agalogo->el_Height + 10 + 26) / 2;
+ #endif
+ #if defined(PISTORM)
+     const uint8_t pistorm_model = pistorm_get_model();
+@@ -330,6 +334,7 @@
+ #ifdef AGA_PISTORM
+     start_y += pistormlogo->el_Height + 10;
+     draw_logo(agalogo, (sz.width - agalogo->el_Width) / 2, start_y);
++    aga_ham6_label_y = start_y + agalogo->el_Height + 10;
+     tlsf_free(tlsf, agalogo);
+ #endif
+     tlsf_free(tlsf, pistormlogo);
+@@ -349,6 +354,14 @@
+ #endif
+     /* Print EMu68 version number and git sha. */
+     kprintf_pc(__putc, NULL, &VERSION_STRING[6]);
++#ifdef AGA_PISTORM
++    {
++        static const char aga_ham6_label[] = "+HAM6 Accelerator";
++        text_x = (fb_width - ((sizeof(aga_ham6_label) - 1) * 8) - 1) / 8;
++        text_y = (aga_ham6_label_y + 10) / 16;
++        kprintf_pc(__putc, NULL, aga_ham6_label);
++    }
++#endif
+     
+     /* Reset test coordinates for further text printing (e.g. buptest) */
+     text_x = 0;
