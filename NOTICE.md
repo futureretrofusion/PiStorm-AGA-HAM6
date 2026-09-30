@@ -17,7 +17,11 @@ Emu68 1.1.0-beta.1
 license: MPL-2.0
 ```
 
-Emu68 is not vendored here. `arm/emu68-aga.patch` describes the integration changes required by this project against that upstream revision.
+Emu68 is not vendored here. `arm/emu68-aga.patch` and `arm/emu68-program-run.patch` describe the integration changes required by this project against that upstream revision.
+
+The Emu68-covered source and modifications distributed in these patches, and the modified Emu68 files produced by applying them, are subject to the Mozilla Public License, v. 2.0. Their upstream copyright and licence notices must be preserved. The GPL-2.0-only licence for the AGA/ECS chipset and HAM6 renderer does not replace the MPL-2.0 terms for these Emu68 modifications.
+
+A verbatim copy of the licence from the pinned upstream revision is included in [LICENSE-MPL-2.0](LICENSE-MPL-2.0). The [upstream licence](https://github.com/michalsc/Emu68/blob/0ba3a899341dee958332a4182911861420b03bff/LICENSE) is also available online.
 
 ## PiStorm
 
