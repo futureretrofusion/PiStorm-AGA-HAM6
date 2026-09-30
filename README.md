@@ -140,6 +140,8 @@ The source in this repository is reconstructed from the current hardware-tested 
 
 ## License and attribution
 
-The AGA chipset code and integration source in this repository are GPL-2.0-only. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
+The AGA/ECS chipset and HAM6 renderer code are GPL-2.0-only. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
 
-Emu68 is a separate upstream project licensed under MPL-2.0. This repository distributes an integration patch, not a copy of the Emu68 source tree.
+Emu68 1.1.0-beta.1 is licensed under MPL-2.0. The Emu68-covered source and modifications distributed in `arm/emu68-aga.patch` and `arm/emu68-program-run.patch`, and the modified Emu68 files produced by applying them, remain subject to MPL-2.0. The GPL statement above does not replace their upstream licence or notices. See [LICENSE-MPL-2.0](LICENSE-MPL-2.0).
+
+This repository distributes integration patches, not a vendored Emu68 source tree. The exact upstream source revision is recorded in [EMU68-SOURCE.txt](EMU68-SOURCE.txt).
